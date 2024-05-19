@@ -1,0 +1,100 @@
+{% extends 'base.html' %}
+
+{% load static %}
+{% block css %}
+<link href="{% static 'myapp/styles/gamestyle.css' %}" type="text/css" rel="stylesheet" >
+{% endblock %}
+
+{% block content %}
+    <h1>Typing Game</h1>
+        <div id="snippet"></div>
+        <div id="typed"></div>
+        <div id="remaining"></div>
+        <div id="result"></div>
+        <script>
+                let typedText = '';
+                let snippetText = '';
+
+                    const socket = new WebSocket(
+                        'ws://'
+                        + window.location.host
+                        + '/ws/typing/'
+                        );
+                        
+                    socket.onopen = function() {
+                        console.log('WebSocket connection established');
+                        socket.send(JSON.stringify({'get_initial_data': true}));
+                    };
+
+                    socket.onmessage = function(event) {
+                        console.log('Received message:', event.data); // Log incoming messages
+                        let data = JSON.parse(event.data);
+                        if (data.game_over) {
+                            document.getElementById('snippet').innerText = 'Game Over! You have completed all snippets.';
+                            document.getElementById('remaining').innerText = '';
+                            document.getElementById('typed').innerText = '';
+                            document.getElementById('result').innerText = '';
+                            document.removeEventListener('keydown', keydownHandler);
+                        }
+                        if (data.remaining_text) {
+                            snippetText = data.remaining_text;
+                            document.getElementById('snippet').innerText = snippetText;
+                            document.getElementById('remaining').innerText = snippetText;
+                            typedText = data.typed_text; // Initialize typedText with received data
+                            document.getElementById('typed').innerText = typedText;
+                            document.getElementById('result').innerText = '';
+                        } else {
+                            document.getElementById('typed').innerText = data.typed_text;
+                            document.getElementById('remaining').innerText = data.remaining_text;
+                            document.getElementById('result').innerText = data.is_correct ? 'Correct!' : '';
+                        }
+
+                        if (data.is_correct) {
+                            typedText = '';
+                            document.getElementById('typed').innerText = '';
+                            document.getElementById('remaining').innerText =  data.remaining_text;
+                            document.getElementById('result').innerText = '';
+                        }
+
+                    };
+                
+                    socket.onerror = function(error) {
+                        console.log('WebSocket error:', error);
+                    };
+            
+
+                    document.addEventListener('keydown', (event) => {
+                        let key = event.key;
+                        if (key.length === 1 && /[a-zA-Z0-9 ,.]/.test(key)) {
+                            typedText += key;
+                        }
+                        else if (key === 'Backspace'){
+                            typedText = typedText.slice(0, -1);
+                        }
+                        else if (key === ' ') {
+                            // Handle Space key
+                            typedText += ' '; // Append a space character
+                        }
+                        else if (key === 'Enter') {
+                            // Optional: Handle Enter key if needed
+                            event.preventDefault();
+                        }
+
+                        let message = JSON.stringify({
+                            'typed_text': typedText,
+                            'snippet_text': snippetText
+                        });
+                        if (socket.readyState === WebSocket.OPEN) {
+                            console.log('Sending message:', message);
+                            socket.send(message);
+                        } else {
+                            console.error('WebSocket is not open. Current state:', socket.readyState);
+                        }
+                    });
+                    
+                    socket.onclose = function(event) {
+                        console.log('WebSocket closed with code:', event.code, 'and reason:', event.reason);
+                    };
+                
+        </script>
+{%endblock%}
