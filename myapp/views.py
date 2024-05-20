@@ -1,4 +1,5 @@
 from django.shortcuts import render
+
 # Create your views here.
 def type_game(response):
 
