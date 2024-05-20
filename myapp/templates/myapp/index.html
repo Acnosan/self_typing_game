@@ -8,7 +8,8 @@
 {% block content %}
 <div class='game_container'>
     <div class='game_content'>
-        <h1>Typing Game</h1>
+        <h1>Typing Game <span id="score">0</span> </h1>
+
         <div id="snippet"></div>
         <div id="typed"></div>
         <div id="remaining"></div>
@@ -21,57 +22,63 @@
         'ws://' + window.location.host + '/ws/typing/'
     );
 
-    let snippetText = "";
-    let typedText = "";
+    let score = document.getElementById('score');
+    let snippet = document.getElementById('snippet'); 
+    let remaining = document.getElementById('remaining'); 
+    let typed = document.getElementById('typed');
+    let result = document.getElementById('result');
+
 
     socket.onmessage = function(event) {
         console.log('Received message:', event.data);
         let data = JSON.parse(event.data);
 
         if (data.game_over) {
-            document.getElementById('snippet').innerText = 'Game Over! You have completed all snippets.';
-            document.getElementById('remaining').innerText = '';
-            document.getElementById('typed').innerText = '';
-            document.getElementById('result').innerText = '';
+            snippet.innerText = 'Game Over! You have completed all snippets.';
+            typed.innerText = '';
+            remaining.innerText = '';
+            result.innerText = '';
             document.removeEventListener('keydown', keydownHandler);
         }else{
-            document.getElementById('snippet').innerText = data.snippet_text;
-            document.getElementById('typed').innerText =  data.typed_text;
-            document.getElementById('remaining').innerText = data.snippet_text.slice( data.typed_text.length);
-            document.getElementById('result').innerText = data.is_correct ? 'Correct!' : '';
+            snippet.innerText = data.snippet_text;
+            typed.innerText =  data.typed_text;
+            remaining.innerText = snippet.innerText.slice(typed.innerText.length);
         } 
         if (data.is_correct ){
-            document.getElementById('typed').innerText = '';
-            document.getElementById('result').innerText = '';
+            typed.innerText = '';
+            result.innerText = '';
+            score.innerText = data.player_score;
         }
     };
 
     const keydownHandler = (event) => {
         let key = event.key;
-        let typedText=document.getElementById('typed').innerText ;
-        let snippetText=document.getElementById('snippet').innerText;
-        let remainingText=document.getElementById('remaining').innerText;
 
-        if (key.length === 1 && /[a-z .]/.test(key) ) {
-            if (key === snippetText[typedText.length]) {
-                typedText += key.toLowerCase();
-                document.getElementById('typed').innerText = typedText;
-                document.getElementById('remaining').innerText = snippetText.slice(typedText.length);
+        if (key.length === 1 && /[a-z .]/i.test(key) ) {
+            if (key === snippet.innerText[typed.innerText.length]) {
+                if(key == " "){            
+                    console.log('its space !!!!!!');
+                    typed.innerText +=  ' ';
+                }else{
+                    typed.innerText +=  key.toLowerCase();
+                }
+                remaining.innerText = snippet.innerText.slice(typed.innerText.length);
+                result.innerText = '';
             } else {
-                document.getElementById('result').innerText = 'Incorrect key pressed!';
+                result.innerText = 'Incorrect key pressed!';
             }
-        } else if (key === 'Backspace') {
-            if (typedText.length > 0) {
-                typedText = typedText.slice(0, -1);
-                document.getElementById('typed').innerText = typedText;
-                document.getElementById('remaining').innerText = snippetText.slice(typedText.length);
+        }
+        else if (key === 'Backspace') {
+            if (typed.innerText.length > 0) {
+                typed.innerText = typed.innerText.slice(0, -1);
+                remaining.innerText = snippet.innerText.slice(typed.innerText.length);
             }
         }
 
         let message = JSON.stringify({
-            'snippet_text':snippetText,
-            'typed_text': typedText,
-            'remaining_text': remainingText,
+            'snippet_text':snippet.innerText,
+            'typed_text': typed.innerText,
+            'remaining_text': remaining.innerText,
         });
 
         if (socket.readyState === WebSocket.OPEN) {
