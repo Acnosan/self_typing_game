@@ -1,3 +1,10 @@
 {
-    "files.exclude": {}
+    "files.exclude": {
+        "myapp\\urls.py": true,
+        "myapp\\views.py": true,
+        "myapp\\base.html": true,
+        "myapp\\__init__.py": true,
+        "myapp\\__pycache__": true,
+        "db.sqlite3": true
+    }
 }

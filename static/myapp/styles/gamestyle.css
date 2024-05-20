@@ -1,16 +1,41 @@
+html, body {
+    height: 100%;
+    margin: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: gray;
+}
+
+
 #snippet {
-    font-size: 24px;
     margin-bottom: 20px;
 }
 #typed {
-    font-size: 24px;
     color: green;
 }
 #remaining {
-    font-size: 24px;
     color: red;
 }
 #result {
     font-size: 24px;
     margin-top: 20px;
+}
+
+.game_container {
+    width: 600px; /* Fixed width */
+    height: 400px; /* Fixed height */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+    border: 1px solid #ccc; /* optional, for visual aid */
+    padding: 20px; /* optional, for spacing */
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1); /* optional, for styling */
+}
+
+.game_content{
+    position: relative;
+    text-align: center;
+    font-size: 30px;
 }
