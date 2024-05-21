@@ -9,7 +9,7 @@
 <div class='game_container'>
     <div class='game_content'>
         <h1>Typing Game <span id="score">0</span> </h1>
-
+        <div><button id="start_btn">Play</button></div>
         <div id="snippet"></div>
         <div id="typed"></div>
         <div id="remaining"></div>
@@ -17,82 +17,89 @@
     </div>
 </div>
 <script>
-
-    const socket = new WebSocket(
-        'ws://' + window.location.host + '/ws/typing/'
-    );
-
     let score = document.getElementById('score');
     let snippet = document.getElementById('snippet'); 
     let remaining = document.getElementById('remaining'); 
     let typed = document.getElementById('typed');
     let result = document.getElementById('result');
+    let start_btn = document.getElementById('start_btn');
+    let socket;
 
+const startGame = () =>{
+    socket = new WebSocket('ws://' + window.location.host + '/ws/typing/');
+
+    socket.onopen = function() {
+        console.log('WebSocket connection established');
+        socket.send(JSON.stringify({
+            'action': 'start',
+            'player_score' : 0,
+        }));
+    };
 
     socket.onmessage = function(event) {
-        console.log('Received message:', event.data);
+        console.log('Received message: FROM THE SOCKET \n', event.data);
         let data = JSON.parse(event.data);
 
+        document.addEventListener('keydown', keydownHandler);
         if (data.game_over) {
-            snippet.innerText = 'Game Over! You have completed all snippets.';
-            typed.innerText = '';
-            remaining.innerText = '';
-            result.innerText = '';
             document.removeEventListener('keydown', keydownHandler);
+            snippet.innerHTML ='Game Over! You have completed all snippets.';
+            remaining.innerHTML ='';
+            start_btn.style.display = 'inline';
         }else{
-            snippet.innerText = data.snippet_text;
-            typed.innerText =  data.typed_text;
-            remaining.innerText = snippet.innerText.slice(typed.innerText.length);
+            snippet.innerHTML = data.snippet_text;
+            typed.innerHTML = data.typed_text;
+            remaining.innerHTML = data.remaining_text;
         } 
         if (data.is_correct ){
-            typed.innerText = '';
-            result.innerText = '';
-            score.innerText = data.player_score;
+            typed.innerHTML ='';
+            result.innerHTML ='';
+            score.innerHTML =data.player_score;
         }
     };
 
-    const keydownHandler = (event) => {
+    socket.onclose = function(event) {console.log('WebSocket closed with code:', event.code, 'and reason:', event.reason);};
+    socket.onerror = function(error) {console.log('WebSocket error:', error);};
+};
+
+const keydownHandler = (event) => {
         let key = event.key;
 
-        if (key.length === 1 && /[a-z .]/i.test(key) ) {
-            if (key === snippet.innerText[typed.innerText.length]) {
-                if(key == " "){            
-                    console.log('its space !!!!!!');
-                    typed.innerText +=  ' ';
-                }else{
-                    typed.innerText +=  key.toLowerCase();
-                }
-                remaining.innerText = snippet.innerText.slice(typed.innerText.length);
+        if ( /[a-z ]/.test(key) ) {
+            if (key === snippet.innerText[typed.innerHTML.length]) {
+                typed.innerHTML +=  key;
                 result.innerText = '';
+                remaining.innerHTML = snippet.innerHTML.slice(typed.innerHTML.length);
             } else {
                 result.innerText = 'Incorrect key pressed!';
             }
         }
         else if (key === 'Backspace') {
-            if (typed.innerText.length > 0) {
-                typed.innerText = typed.innerText.slice(0, -1);
-                remaining.innerText = snippet.innerText.slice(typed.innerText.length);
+            if (typed.innerHTML.length > 0) {
+                typed.innerHTML = typed.innerHTML.slice(0, -1);
+                remaining.innerHTML = snippet.innerHTML.slice(typed.innerText.length);
             }
         }
 
         let message = JSON.stringify({
-            'snippet_text':snippet.innerText,
-            'typed_text': typed.innerText,
-            'remaining_text': remaining.innerText,
+            'snippet_text':snippet.innerHTML,
+            'typed_text': typed.innerHTML,
+            'remaining_text': remaining.innerHTML,
         });
-
+        
         if (socket.readyState === WebSocket.OPEN) {
-            console.log('Sending message:', message);
+            console.log('Sending message: TO THE SOCKET \n', message);
             socket.send(message);
         } else {
             console.error('WebSocket is not open. Current state:', socket.readyState);
         }
-    };
+};
 
-    document.addEventListener('keydown', keydownHandler);
+const StartNewGame = () => {
+        start_btn.style.display = 'none';
+        startGame();
+};
 
-    socket.onopen = function() {console.log('WebSocket connection established');};
-    socket.onclose = function(event) {console.log('WebSocket closed with code:', event.code, 'and reason:', event.reason);};
-    socket.onerror = function(error) {console.log('WebSocket error:', error);};
+    document.addEventListener('click', StartNewGame);
 </script>
 {% endblock %}
